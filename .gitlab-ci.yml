@@ -1,0 +1,20 @@
+image: rastasheep/ubuntu-sshd:18.04
+
+stages:
+  - deploy
+  - desarrollo
+
+deploy:
+  stage: deploy
+  only:
+    - desarrollo
+  script:
+    - apt-get update
+    - apt-get install rsync -y
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - rsync -r --force -e "ssh -p 32110" . usergit@148.215.109.229:/projects/expediente/
+    - ssh usergit@148.215.109.229 -p 32110 "cd /projects/expediente && composer install && php artisan config:cache && php artisan config:clear && php artisan cache:clear && php artisan view:clear"
+
